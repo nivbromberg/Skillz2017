@@ -3,6 +3,7 @@ import pirates.*;
 import java.util.*;
 
 public class MyBot implements PirateBot {
+	// GAME DETAILS
     private PirateGame game;
     private List<Pirate> enemyPirates;
     private List<Drone> enemyDrones;
@@ -14,8 +15,7 @@ public class MyBot implements PirateBot {
     private List<City> myCities;
     private int minDistance;
 
-    private int[] turnsThatStatic;
-    private Location[] enemyPiratesLocations;
+    private List<StaticEnemy> staticEnemy;
     
     private boolean stayThere = false;
     private int pirateToStay;
@@ -74,33 +74,26 @@ public class MyBot implements PirateBot {
         }
     }
     
+    /**
+	 * In the first turn it initializes an arrayList to all enemy pirates
+	 * In every other turn it updates the list
+	 */
     private void checkEnemyLocations()
     {
         if (game.getTurn() == 1)
         {
-            turnsThatStatic = new int[enemyPirates.size()];
-            for (int i = 0 ; i < turnsThatStatic.length ; i++) { turnsThatStatic[i] = 0; }
-            
-            enemyPiratesLocations = new Location[enemyPirates.size()];
-            
-            for (Pirate ep : enemyPirates)
+            staticEnemy = new ArrayList<StaticEnemy>();
+        	
+            for (Pirate enemyPirate : enemyPirates)
             {
-                enemyPiratesLocations[ep.id] = ep.getLocation();
+                staticEnemy.add(new StaticEnemy(enemyPirate));
             }
         }
         else
         {
-            for (Pirate ep : enemyPirates)
+            for (Pirate enemyPirate : staticEnemy)
             {
-                if (ep.getLocation().equals(enemyPiratesLocations[ep.id]))
-                {
-                    turnsThatStatic[ep.id]++;
-                }
-                else
-                {
-                    enemyPiratesLocations[ep.id] = ep.getLocation();
-                    turnsThatStatic[ep.id] = 0;
-                }
+                enemyPirate.update();
             }
         }
     }
