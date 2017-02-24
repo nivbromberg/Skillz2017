@@ -38,36 +38,40 @@ public class MyBot implements PirateBot {
         handleDrones();
     }
     
+    /**
+	 * Checks if any enemy pirate is stationary (i.e. 3 or more turns in the same location)
+	 * @author Niv Bromberg
+	 */
     private void checkSusp()
     {
-        if (myCities.size()>0)
+        if (myCities.size() > 0)
         {
-            checkEnemyLocations();
+        	updateEnemyLocations();
             
-            for (Pirate ep : enemyPirates)
+            for (StaticEnemy enemyPirate : staticEnemies)
             {
-                if (turnsThatStatic[ep.id] >= 3 && getClosestPirateToLocation(myCities.get(0).getLocation(),enemyPirates).equals(ep) && !stayThere)
+                if (enemyPirate.turnsThatStatic >= 3 && getClosestPirateToLocation(myCities.get(0).getLocation(),enemyPirates).equals(enemyPirate.pirate) && !stayThere)
                 {
-                    Pirate p = getClosestPirate(ep,myPirates);
+                    Pirate p = getClosestPirate(enemyPirate,myPirates);
                     if (p != null)
                     {
                         myPirates.remove(p);
                         stayThere = true;
                         pirateToStay = p.id;
-                        whereToStay = ep.getLocation();
-                        game.debug("#2 Pirate "+p.id+" goes to stay where enemy "+ep.id);
-                        goTo(p, ep.getLocation());
+                        whereToStay = enemyPirate.pirate.getLocation();
+                        game.debug("#2 Pirate "+p.id+" goes to stay where enemy "+enemyPirate.pirate.id);
+                        goTo(p, enemyPirate.pirate.getLocation());
                     }
                 }
             
                 else if (turnsThatStatic[ep.id] >= 3)
                 {
-                    Pirate p = getClosestPirate(ep,myPirates);
+                    Pirate p = getClosestPirate(enemyPirate.pirate,myPirates);
                     if (p != null)
                     {
                         myPirates.remove(p);
-                        game.debug("#3 Pirate "+p.id+" goes to attack static enemy "+ep.id);
-                        goTo(p, ep.getLocation());
+                        game.debug("#3 Pirate "+p.id+" goes to attack static enemy "+enemyPirate.pirate.id);
+                        goTo(p, enemyPirate.pirate.getLocation());
                     }
                 }
             }
@@ -78,7 +82,7 @@ public class MyBot implements PirateBot {
 	 * In the first turn it initializes an arrayList to all enemy pirates
 	 * In every other turn it updates the list
 	 */
-    private void checkEnemyLocations()
+    private void updateEnemyLocations()
     {
         if (game.getTurn() == 1)
         {

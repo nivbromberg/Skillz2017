@@ -3,13 +3,14 @@ package bots;
 import pirates.PirateGame;
 
 /**
- *
+ * The purpose of this class is to provide data about possible stationary pirates
+ * 
  * @author Niv Bromberg
  * @since 24/02/2017
  */
 
 public class StaticEnemy {
-	private Pirate pirate;
+	public Pirate pirate;
 	public int turnsThatStatic;
 	private Location location;
 	
