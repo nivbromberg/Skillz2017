@@ -13,7 +13,7 @@ public class MyBot implements PirateBot {
     private List<Island> myIslands;
     private List<Drone> myDrones;
     private List<City> myCities;
-    private int minDistance;
+    private int maxDistance;
 
     private List<StaticEnemy> staticEnemies;
     
@@ -95,6 +95,10 @@ public class MyBot implements PirateBot {
         }
         else
         {
+        	/*
+        	 * For unknown reasons, Object pirate does not updates and keeps the original location,
+        	 * so the loops check for the same enemy pirate as the static one and updates the reference
+        	 */
             for (StaticEnemy staticPirate : staticEnemies)
             {
                 for (Pirate enemyPirate : game.getAllEnemyPirates())
@@ -108,6 +112,12 @@ public class MyBot implements PirateBot {
         }
     }
     
+    /**
+	 * Initializes all attributes in the 'GAME DETAILS' sector attributes
+	 * 
+	 * @param game
+	 *            The PirateGame given in doTurn
+	 */
     private void init(PirateGame game)
     {
         this.game = game;
@@ -119,156 +129,297 @@ public class MyBot implements PirateBot {
         myIslands = game.getMyIslands();
         myDrones = game.getMyLivingDrones();
         myCities = game.getMyCities();
-        minDistance=((int)Math.sqrt(Math.pow(game.getRowCount(),2)+Math.pow(game.getColCount(),2)))+1;
-    }
+        maxDistance = ((int)Math.sqrt(Math.pow(game.getRowCount(),2)+Math.pow(game.getColCount(),2)))+1;
+    } 
     
-    private boolean checkAttack(Pirate p)
-    {
-        for (Pirate ep : enemyPirates)
-        {
-            if (p.inAttackRange(ep))
-            {
-                game.attack(p,ep);
-                return true;
-            }
-        }
-        
-        for (Drone ed : enemyDrones)
-        {
-            if (p.inAttackRange(ed))
-            {
-                game.attack(p,ed);
-                return true;
-            }
-        }
-        return false;
-    }
+    /**
+	 * Returns all enemy aircrafts that can be attacked by myPirate according to
+	 * {@link #checkAttack(Pirate, MapObject)}
+	 * 
+	 * @param myPirate
+	 *            My pirate that is checked if he can attack
+	 * 
+	 * @return List&lt;Aircraft&gt; - all enemy aircrafts that can be attacked
+	 *         by myPirate. If none exist then the list is empty.
+	 * 
+	 * @see MyBot_22_2#checkAttack(Pirate, MapObject)
+	 * 
+	 * @since 22.2.17
+	 */
+	private List<Aircraft> attackableEnemies(Pirate myPirate) {
+		List<Aircraft> enemiesThatCanBeAttacked = new ArrayList<>();
+		for (Pirate enemyPirate : enemyPirates) {
+			if (checkAttack(myPirate, enemyPirate)) {
+				enemiesThatCanBeAttacked.add(enemyPirate);
+			}
+		}
+
+		for (Drone enemyDrone : enemyDrones) {
+			if (checkAttack(myPirate, enemyDrone)) {
+				enemiesThatCanBeAttacked.add(enemyDrone);
+			}
+		}
+		return enemiesThatCanBeAttacked;
+	}
     
-    private boolean goTo(Aircraft a, Location loc)
-    {
-        if (a instanceof Pirate && checkAttack((Pirate)a))
-        {
-            return true;
-        }
-        
-        if(!a.getLocation().equals(loc))
-        {
-            List<Location> list = game.getSailOptions(a,loc);
-            if(!a.getLocation().equals(list.get(0)))
-            {
-                game.setSail(a, list.get(0));
-                if (a instanceof Pirate)
-                {
-                    game.debug("#4 Pirate "+a+" goes to location:"+list.get(0));
-                }
-                return true;
-            }
-        }
-        return false;
-    }
+	/**
+	 * Orders myPirate to attack target
+	 * 
+	 * @param myPirate
+	 *            My pirate that attacks
+	 * @param target
+	 *            The target that is attacked
+	 * @see MyBot_22_2#attackableEnemies(Pirate)
+	 * @see MyBot_22_2#checkAttack(Pirate, MapObject)
+	 * @since 22.2.17
+	 */
+	private void attack(Pirate myPirate, Aircraft target) {
+		game.attack(myPirate, target);
+	}
+
+	/**
+	 * Checks if myPirate can attack target
+	 * 
+	 * @param myPirate
+	 *            My pirate that is checked if he can attack
+	 * @param target
+	 *            The map object that is checked if it can be attacked by
+	 *            myPirate
+	 * @return true - if myPirate can attack target, false - otherwise.
+	 * @since 22.2.17
+	 */
+	private boolean checkAttack(Pirate myPirate, MapObject target) {
+		if (!myPirate.inAttackRange(target) || !myPirate.isAlive())
+			return false;
+		return true;
+	}
     
-    private boolean goTo(Pirate p, Island i){
-        if (checkAttack(p))
-        {
-            return true;
-        }
-        
-        if(!i.inControlRange(p))
-        {
-            List<Location> list = game.getSailOptions(p,i.getLocation());
-            for(Location loc:list){
-                if(!p.getLocation().equals(loc))
-                {
-                    game.setSail(p, loc);
-                    //game.debug("pirate:"+a+", goes to location:"+loc);
-                    return true;
-                }
-            }
-            return false;
-        }
-        else
-        {
-            return true;
-        }
-        
-    }
+	/**
+	 * Orders myAircraft to move towards finalDest according to
+	 * {@link #chooseRandomTempLocation(Aircraft, Location)}
+	 * 
+	 * @param myAircraft
+	 *            My aircraft that is ordered to move
+	 * @param finalDest
+	 *            The final destination of myAircraft
+	 * 
+	 * @return true - if the aircraft has moved, false - otherwise
+	 * 
+	 * @see MyBot_22_2#chooseRandomTempLocation(Aircraft, Location)
+	 */
+	private boolean goTo(Aircraft myAircraft, Location finalDest) {
+		Location tempDest = chooseRandomTempLocation(myAircraft, finalDest);
+		if (tempDest != null) {
+			game.setSail(myAircraft, tempDest);
+			if (myAircraft instanceof Pirate) {
+				game.debug("Pirate " + myAircraft + " goes to location:" + tempDest);
+			}
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Returns the location that myAircraft needs to go to this turn towards
+	 * finalDest.
+	 * 
+	 * @param myAircraft
+	 *            My aircraft that needs to move
+	 * @param finalDest
+	 *            The final destination of myAircraft
+	 * 
+	 * @return Location - the temporary location that myAircraft will do this
+	 *         turn.
+	 */
+	private Location chooseRandomTempLocation(Aircraft myAircraft, Location finalDest) {
+		List<Location> optionalTempDest = game.getSailOptions(myAircraft, finalDest);
+		// The while loop chooses a random location from optionalTempDest to
+		// guarantee
+		// a non predictable path.
+		while (!optionalTempDest.isEmpty()) {
+			int randInt = (int) (Math.random() * optionalTempDest.size());
+			if (!myAircraft.getLocation().equals(optionalTempDest.get(randInt))) {
+				return optionalTempDest.get(randInt);
+			}
+			else
+				optionalTempDest.remove(randInt);
+		}
+		return null;
+	}
+       
+	/**
+	 * Handles pirates movement.<br>
+	 * Priority: 1. Attack any enemy that is in range according to
+	 * {@link #handlePiratesImpulseAttack(List)}<br>
+	 * 2. Move pirates to conquer islands according to
+	 * {@link #handlePiratesToIslands(List)}<br>
+	 * 3. Move pirates without assigned action according to
+	 * {@link #handleUnassignedPirates(List)}
+	 * 
+	 * @see MyBot_22_2#handlePiratesImpulseAttack(List)
+	 * @see MyBot_22_2#handlePiratesToIslands(List)
+	 * @see MyBot_22_2#handleUnassignedPirates(List)
+	 * 
+	 * @since 22.2.17
+	 */
+	private void handlePirates() {
+		List<Pirate> unassignedPirates = new ArrayList<Pirate>(this.myPirates);
+		handlePiratesImpulseAttack(unassignedPirates);
+		handlePiratesToIslands(unassignedPirates);
+		handleUnassignedPirates(unassignedPirates);
+		/*
+		 * for (Pirate ep : enemyPirates) { if (ep.distance(myCities.get(0)) <=
+		 * 8 && minEnDisToCity > ep.distance(myCities.get(0))) { minEnDisToCity
+		 * = ep.distance(myCities.get(0)); closestEnemyToCity = ep; } }
+		 * 
+		 * if(closestEnemyToCity != null) { Pirate p =
+		 * getClosestPirate(closestEnemyToCity,myPirates); game.debug(
+		 * "L197 Pirate "+p+" goes to attack enemy "+closestEnemyToCity);
+		 * goTo(p,closestEnemyToCity.getLocation()); myPirates.remove(p); }
+		 * 
+		 * for (Pirate p : myPirates) { if (neutralIslands.size() != 0) { Island
+		 * closestIsland = getClosestIsland(p, neutralIslands); if
+		 * (closestIsland != null) { goTo(p, closestIsland);
+		 * neutralIslands.remove(closestIsland); } } else if
+		 * (enemyIslands.size() != 0) { Island closestIsland =
+		 * getClosestIsland(p, enemyIslands); if (closestIsland != null) {
+		 * goTo(p, closestIsland); } } else if (myIslands.size() != 0) { Island
+		 * closestIsland = getClosestIsland(p, myIslands); if (closestIsland !=
+		 * null) { goTo(p, closestIsland); } } else unassignedPirates.add(p); }
+		 * 
+		 * for (Pirate pirate : unassignedPirates) { Island closestIsland =
+		 * getClosestIsland(pirate, neutralIslands); if (closestIsland != null)
+		 * { goTo(pirate, closestIsland); } }
+		 */
+	}
+	
+	/**
+	 * Orders all pirates that have an enemy in range according to
+	 * {@link #attackableEnemies(Pirate)} to attack the enemy
+	 * 
+	 * @param myPirates
+	 *            Pirates to order to attack an enemy if possible
+	 * 
+	 * @see MyBot_22_2#attackableEnemies(Pirate)
+	 * @see MyBot_22_2#checkAttack(Pirate, MapObject)
+	 * @see MyBot_22_2#attack(Pirate, Aircraft)
+	 * 
+	 * @since 22.2.17
+	 */
+	private void handlePiratesImpulseAttack(List<Pirate> myPirates) {
+		List<Pirate> piratesToRemove = new ArrayList<Pirate>();
+		
+		for (Pirate pirate : myPirates) {
+			List<Aircraft> attackableEnemies = attackableEnemies(pirate);
+			if (!attackableEnemies.isEmpty()) {
+				attack(pirate, attackableEnemies.get(0));
+				piratesToRemove.add(pirate);
+			}
+		}
+		
+		for (Pirate pirate : piratesToRemove)
+		{
+			myPirates.remove(pirate);
+		}
+	}
+
+	/**
+	 * Handles movement of pirates (from parameter myPirates) to conquer/defend
+	 * islands.<br>
+	 * Priority: 1. Conquer neutral islands<br>
+	 * 2. Conquer enemy islands<br>
+	 * 3. Defend our islands
+	 * 
+	 * @param myPirates
+	 *            Pirates to send to conquer islands.
+	 * 
+	 * @since 22.2.17
+	 */
+	private void handlePiratesToIslands(List<Pirate> myPirates) {
+		List<Island> neutralIslands = new ArrayList<Island>(this.neutralIslands);
+		List<Pirate> piratesToRemove = new ArrayList<Pirate>();
+		for (Pirate pirate : myPirates) {
+			// assigns the closest island available in the following priority
+			// order:
+			// 1.neutral islands
+			// 2.enemy islands
+			// 3.my islands
+			Island closestIsland = null;
+			if (!neutralIslands.isEmpty()) {
+				closestIsland = getClosestIsland(pirate, neutralIslands);
+			}
+			else if (!enemyIslands.isEmpty()) {
+				closestIsland = getClosestIsland(pirate, enemyIslands);
+			}
+			else if (!myIslands.isEmpty()) {
+				closestIsland = getClosestIsland(pirate, myIslands);
+			}
+			if (closestIsland != null) {
+				// orders the pirate to move to the chosen island if not in the
+				// islnad's control area, if it is then does nothing.
+				// PLEASE NOTICE: if the pirate is in the island's control area,
+				// the pirate is still removed from the pirates list in order to
+				// maintain his control on the island.
+				if (!closestIsland.inControlRange(pirate)) {
+					goTo(pirate, closestIsland.location);
+				}
+				// Checks if closest island is neutral, if it is, the island is
+				// removed from the neutral islands list in order to not send
+				// multiple pirates to the same neutral island (strategic
+				// option).
+				if (closestIsland.owner.equals(game.getNeutral()))
+					neutralIslands.remove(closestIsland);
+
+				// removes pirate from pirates list in order to not assign
+				// multiple actions to the same pirate.
+				piratesToRemove.add(pirate);
+			}
+		}
+		
+		for (Pirate pirate : piratesToRemove)
+		{
+			myPirates.remove(pirate);
+		}
+	}
+
+	/**
+	 * Handles movement of all unassigned pirates (from parameter).<br>
+	 * Priority: 1. Send every unassigned pirate to conquer its closest neutral
+	 * island.
+	 * 
+	 * @param unassignedPirates
+	 *            Pirates without an assigned action.
+	 * 
+	 * @since 22.2.17
+	 */
+	private void handleUnassignedPirates(List<Pirate> unassignedPirates) {
+		for (Pirate pirate : unassignedPirates) {
+			Island closestIsland = getClosestIsland(pirate, neutralIslands);
+			if (closestIsland != null && !closestIsland.inControlRange(pirate)) {
+				goTo(pirate, closestIsland.location);
+			}
+		}
+	}
     
-    private void handlePirates(){
-        List<Island> neutralIslands=new ArrayList<Island>(this.neutralIslands);
-        List<Pirate> piratesDidNotMove = new ArrayList<Pirate>();
-        List<Pirate> myPirates=new ArrayList<Pirate>(this.myPirates);
-        Pirate closestEnemyToCity = null;
-        int minEnDisToCity = minDistance;
-        
-        /*for (Pirate ep : enemyPirates)
-        {
-            if (ep.distance(myCities.get(0)) <= 8 && minEnDisToCity > ep.distance(myCities.get(0)))
-            {
-                minEnDisToCity = ep.distance(myCities.get(0));
-                closestEnemyToCity = ep;
-            }
-        }
-        
-        if(closestEnemyToCity != null)
-        {
-            Pirate p = getClosestPirate(closestEnemyToCity,myPirates);
-            game.debug("L197 Pirate "+p+" goes to attack enemy "+closestEnemyToCity);
-            goTo(p,closestEnemyToCity.getLocation());
-            myPirates.remove(p);
-        }*/
-        
-        for (Pirate p : myPirates)
-        {
-            if(neutralIslands.size()!=0){
-                Island closestIsland=getClosestIsland(p,neutralIslands);
-                if (closestIsland != null)
-                {
-                    goTo(p, closestIsland);
-                    neutralIslands.remove(closestIsland);
-                }
-            }
-            else if(enemyIslands.size()!=0){
-                Island closestIsland=getClosestIsland(p,enemyIslands);
-                if (closestIsland != null)
-                {
-                    goTo(p, closestIsland);
-                }
-            }
-            else if(myIslands.size()!=0) {
-                Island closestIsland=getClosestIsland(p,myIslands);
-                if (closestIsland != null)
-                {
-                    goTo(p, closestIsland);
-                }
-            }
-            else
-                piratesDidNotMove.add(p);
-        }
-        neutralIslands = game.getNeutralIslands();
-        for (Pirate pirate : piratesDidNotMove)
-        {
-            Island closestIsland = getClosestIsland(pirate,neutralIslands);
-            if (closestIsland != null)
-            {
-                goTo(pirate, closestIsland);
-            }
-        }
-    }
-    
-    private void handleDrones(){
-        //game.debug("num of drones:"+myDrones.size());
-        
-        for (Drone d : myDrones)
-        {
-            goTo(d, getClosestCity(d,myCities).getLocation());
-        }
-    }
+	/**
+	 * Handles drones movement<br>
+	 * Priority: 1. Move every drone to its closest city.
+	 * 
+	 * @since 22.2.17
+	 */
+	private void handleDrones() {
+		// game.debug("num of drones:"+myDrones.size());
+
+		for (Drone d : myDrones) {
+			goTo(d, getClosestCity(d, myCities).getLocation());
+		}
+	}
     
     private City getClosestCity(Aircraft a, List<City> l){
-        int minDistance = this.minDistance;
+        int minDistance = this.maxDistance;
         City closestObject=null;
         for(City c:l){
-            if(a.distance(c)<minDistance || closestObject==null)
+            if(a.distance(c) < minDistance || closestObject == null)
             {
                 minDistance=a.distance(c);
                 closestObject=c;
@@ -278,10 +429,10 @@ public class MyBot implements PirateBot {
     }
     
     private Island getClosestIsland(Aircraft a, List<Island> l){
-        int minDistance = this.minDistance;
+        int minDistance = this.maxDistance;
         Island closestObject=null;
         for(Island i:l){
-            if(a.distance(i)<minDistance || closestObject==null)
+            if(a.distance(i) < minDistance || closestObject == null)
             {
                 minDistance=a.distance(i);
                 closestObject=i;
@@ -291,10 +442,10 @@ public class MyBot implements PirateBot {
     }
     
     private Pirate getClosestPirate(Aircraft a, List<Pirate> l){
-        int minDistance = this.minDistance;
+        int minDistance = this.maxDistance;
         Pirate closestObject=null;
         for(Pirate p : l){
-            if(p.distance(a)<minDistance || closestObject==null)
+            if(p.distance(a) < minDistance || closestObject == null)
             {
                 minDistance = p.distance(a);
                 closestObject=p;
@@ -305,10 +456,10 @@ public class MyBot implements PirateBot {
     
     private Pirate getClosestPirateToLocation(Location loc, List<Pirate> l)
     {
-        int minDistance = this.minDistance;
+        int minDistance = this.maxDistance;
         Pirate closestObject=null;
         for(Pirate p : l){
-            if(p.distance(loc)<minDistance || closestObject==null)
+            if(p.distance(loc) < minDistance || closestObject == null)
             {
                 minDistance = p.distance(loc);
                 closestObject=p;
