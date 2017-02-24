@@ -52,7 +52,7 @@ public class MyBot implements PirateBot {
             {
                 if (enemyPirate.turnsThatStatic >= 3 && getClosestPirateToLocation(myCities.get(0).getLocation(),enemyPirates).equals(enemyPirate.pirate) && !stayThere)
                 {
-                    Pirate p = getClosestPirate(enemyPirate,myPirates);
+                    Pirate p = getClosestPirate(enemyPirate.pirate,myPirates);
                     if (p != null)
                     {
                         myPirates.remove(p);
@@ -64,7 +64,7 @@ public class MyBot implements PirateBot {
                     }
                 }
             
-                else if (turnsThatStatic[ep.id] >= 3)
+                else if (enemyPirate.turnsThatStatic >= 3)
                 {
                     Pirate p = getClosestPirate(enemyPirate.pirate,myPirates);
                     if (p != null)
@@ -95,9 +95,15 @@ public class MyBot implements PirateBot {
         }
         else
         {
-            for (StaticEnemy enemyPirate : staticEnemies)
+            for (StaticEnemy staticPirate : staticEnemies)
             {
-                enemyPirate.update();
+                for (Pirate enemyPirate : game.getAllEnemyPirates())
+                {
+                    if (staticPirate.pirate.id == enemyPirate.id)
+                    {
+                        staticPirate.update(enemyPirate);
+                    }
+                }
             }
         }
     }

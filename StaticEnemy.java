@@ -1,6 +1,6 @@
 package bots;
 
-import pirates.PirateGame;
+import pirates.*;
 
 /**
  * The purpose of this class is to provide data about possible stationary pirates
@@ -31,8 +31,9 @@ public class StaticEnemy {
 	 * Will be called every turn to identify possible stationary pirate
 	 * If pirate is not alive counter will be initialized
 	 */
-	public void update()
+	public void update(Pirate pirate)
 	{
+	    this.pirate = pirate;
 		if (pirate.getLocation().equals(location) && pirate.isAlive())
         {
             turnsThatStatic++;
@@ -42,5 +43,10 @@ public class StaticEnemy {
         	location = pirate.getLocation();
             turnsThatStatic = 0;
         }
+	}
+	
+	public String toString()
+	{
+		return "Pirate " + pirate.id + ", turns: " + turnsThatStatic +", loc: " + location;
 	}
 }
