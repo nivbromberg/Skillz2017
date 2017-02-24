@@ -408,7 +408,7 @@ public class MyBot implements PirateBot {
 	{
 		for (MovingPirate pirate : movingPirates)
 		{
-		    if (pirate != null && !pirate.didAttack)
+		    if (pirate != null && !pirate.didAttack && pirate.getClosestLocation() != null)
 		    {
 		    	goTo(pirate.pirate, pirate.getClosestLocation());
 		    }
