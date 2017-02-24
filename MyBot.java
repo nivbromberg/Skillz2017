@@ -15,7 +15,7 @@ public class MyBot implements PirateBot {
     private List<City> myCities;
     private int minDistance;
 
-    private List<StaticEnemy> staticEnemy;
+    private List<StaticEnemy> staticEnemies;
     
     private boolean stayThere = false;
     private int pirateToStay;
@@ -82,16 +82,16 @@ public class MyBot implements PirateBot {
     {
         if (game.getTurn() == 1)
         {
-            staticEnemy = new ArrayList<StaticEnemy>();
+            staticEnemies = new ArrayList<StaticEnemy>();
         	
-            for (Pirate enemyPirate : enemyPirates)
+            for (Pirate enemyPirate : game.getAllEnemyPirates())
             {
-                staticEnemy.add(new StaticEnemy(enemyPirate));
+                staticEnemies.add(new StaticEnemy(enemyPirate));
             }
         }
         else
         {
-            for (Pirate enemyPirate : staticEnemy)
+            for (StaticEnemy enemyPirate : staticEnemies)
             {
                 enemyPirate.update();
             }
