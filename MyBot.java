@@ -16,6 +16,7 @@ public class MyBot implements PirateBot {
     private int maxDistance;
 
     private List<StaticEnemy> staticEnemies;
+    private MovingPirate[] movingPirates;
     
     private boolean stayThere = false;
     private int pirateToStay;
@@ -36,10 +37,12 @@ public class MyBot implements PirateBot {
         
         handlePirates();
         handleDrones();
+        movePirates();
     }
     
     /**
-	 * Checks if any enemy pirate is stationary (i.e. 3 or more turns in the same location)
+	 * Checks if any enemy pirate is stationary (i.e. 3 or more turns in the same location).<br>
+	 * If an enemy's pirate's distance to my city is 10 or less,  
 	 * @author Niv Bromberg
 	 */
     private void checkSusp()
@@ -50,7 +53,7 @@ public class MyBot implements PirateBot {
             
             for (StaticEnemy enemyPirate : staticEnemies)
             {
-                if (enemyPirate.turnsThatStatic >= 3 && getClosestPirateToLocation(myCities.get(0).getLocation(),enemyPirates).equals(enemyPirate.pirate) && !stayThere)
+                if (enemyPirate.turnsThatStatic >= 3 && enemyPirate.pirate.distance(myCities.get(0)) <= 10 && !stayThere)
                 {
                     Pirate p = getClosestPirate(enemyPirate.pirate,myPirates);
                     if (p != null)
@@ -66,13 +69,9 @@ public class MyBot implements PirateBot {
             
                 else if (enemyPirate.turnsThatStatic >= 3)
                 {
-                    Pirate p = getClosestPirate(enemyPirate.pirate,myPirates);
-                    if (p != null)
-                    {
-                        myPirates.remove(p);
-                        game.debug("#3 Pirate "+p.id+" goes to attack static enemy "+enemyPirate.pirate.id);
-                        goTo(p, enemyPirate.pirate.getLocation());
-                    }
+                	enemyPirate.isStatic = true;
+                	Pirate pirate = getClosestPirate(enemyPirate.pirate,myPirates);
+                	movingPirates[pirate.id].addDestination(enemyPirate.pirate.getLocation());
                 }
             }
         }
@@ -100,14 +99,8 @@ public class MyBot implements PirateBot {
         	 * so the loops check for the same enemy pirate as the static one and updates the reference
         	 */
             for (StaticEnemy staticPirate : staticEnemies)
-            {
-                for (Pirate enemyPirate : game.getAllEnemyPirates())
-                {
-                    if (staticPirate.pirate.id == enemyPirate.id)
-                    {
-                        staticPirate.update(enemyPirate);
-                    }
-                }
+            {                
+                staticPirate.update(game.getAllEnemyPirates());
             }
         }
     }
@@ -130,6 +123,12 @@ public class MyBot implements PirateBot {
         myDrones = game.getMyLivingDrones();
         myCities = game.getMyCities();
         maxDistance = ((int)Math.sqrt(Math.pow(game.getRowCount(),2)+Math.pow(game.getColCount(),2)))+1;
+        
+        movingPirates = new MovingPirate[game.getAllMyPirates().size()];
+        for (Pirate pirate : myPirates)
+        {
+        	movingPirates[pirate.id] = new MovingPirate(pirate,maxDistance);
+        }
     } 
     
     /**
@@ -320,6 +319,7 @@ public class MyBot implements PirateBot {
 		for (Pirate pirate : piratesToRemove)
 		{
 			myPirates.remove(pirate);
+			movingPirates[pirate.id].didAttack = true;
 		}
 	}
 
@@ -361,7 +361,7 @@ public class MyBot implements PirateBot {
 				// the pirate is still removed from the pirates list in order to
 				// maintain his control on the island.
 				if (!closestIsland.inControlRange(pirate)) {
-					goTo(pirate, closestIsland.location);
+					movingPirates[pirate.id].addDestination(closestIsland.location);
 				}
 				// Checks if closest island is neutral, if it is, the island is
 				// removed from the neutral islands list in order to not send
@@ -396,8 +396,22 @@ public class MyBot implements PirateBot {
 		for (Pirate pirate : unassignedPirates) {
 			Island closestIsland = getClosestIsland(pirate, neutralIslands);
 			if (closestIsland != null && !closestIsland.inControlRange(pirate)) {
-				goTo(pirate, closestIsland.location);
+				movingPirates[pirate.id].addDestination(closestIsland.location);
 			}
+		}
+	}
+	
+	/**
+	 * Moves all my pirates to their closest destination
+	 */
+	private void movePirates()
+	{
+		for (MovingPirate pirate : movingPirates)
+		{
+		    if (pirate != null && !pirate.didAttack)
+		    {
+		    	goTo(pirate.pirate, pirate.getClosestLocation());
+		    }
 		}
 	}
     
@@ -415,6 +429,16 @@ public class MyBot implements PirateBot {
 		}
 	}
     
+	/**
+	 * Finds closest city to a given aircraft
+	 * 
+	 * @param a
+	 *            Given aircraft
+	 * @param l
+	 *            List of cities       
+	 * 
+	 * @return closest city
+	 */
     private City getClosestCity(Aircraft a, List<City> l){
         int minDistance = this.maxDistance;
         City closestObject=null;
@@ -428,6 +452,16 @@ public class MyBot implements PirateBot {
         return closestObject;
     }
     
+    /**
+	 * Finds closest island to a given aircraft
+	 * 
+	 * @param a
+	 *            Given aircraft
+	 * @param l
+	 *            List of islands       
+	 * 
+	 * @return closest island
+	 */
     private Island getClosestIsland(Aircraft a, List<Island> l){
         int minDistance = this.maxDistance;
         Island closestObject=null;
@@ -441,6 +475,16 @@ public class MyBot implements PirateBot {
         return closestObject;
     }
     
+    /**
+	 * Finds closest pirate to a given aircraft
+	 * 
+	 * @param a
+	 *            Given aircraft
+	 * @param l
+	 *            List of pirates       
+	 * 
+	 * @return closest pirate
+	 */
     private Pirate getClosestPirate(Aircraft a, List<Pirate> l){
         int minDistance = this.maxDistance;
         Pirate closestObject=null;
@@ -454,6 +498,16 @@ public class MyBot implements PirateBot {
         return closestObject;
     }
     
+    /**
+	 * Finds closest pirate to a given location
+	 * 
+	 * @param loc
+	 *            Given location
+	 * @param l
+	 *            List of pirates       
+	 * 
+	 * @return closest pirate
+	 */
     private Pirate getClosestPirateToLocation(Location loc, List<Pirate> l)
     {
         int minDistance = this.maxDistance;
