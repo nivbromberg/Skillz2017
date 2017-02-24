@@ -26,18 +26,44 @@ public class MyBot implements PirateBot {
     public void doTurn(PirateGame game) {
         init(game);
         
-        if (stayThere)
+        if (myCities.size() == 0) // MAP : shaldag
         {
-            //pirateToStay = getClosestPirateToLocation(whereToStay,myPirates).id;
-            game.debug("#1 pirateToStay="+pirateToStay+", whereToStay="+whereToStay);
-            goTo(game.getMyPirateById(pirateToStay), whereToStay);
-            myPirates.remove(game.getMyPirateById(pirateToStay));
+        	shaldag();
         }
-        checkSusp();
         
-        handlePirates();
-        handleDrones();
-        movePirates();
+        else 
+        {
+	        if (stayThere)
+	        {
+	            //pirateToStay = getClosestPirateToLocation(whereToStay,myPirates).id;
+	            game.debug("#1 pirateToStay="+pirateToStay+", whereToStay="+whereToStay);
+	            goTo(game.getMyPirateById(pirateToStay), whereToStay);
+	            myPirates.remove(game.getMyPirateById(pirateToStay));
+	        }
+	        checkSusp();
+	        
+	        handlePirates();
+	        handleDrones();
+	        movePirates();
+        }
+    }
+    
+    /**
+	 * Handles the Shaldag map
+	 */
+    private void shaldag()
+    {
+    	Pirate myPirate = myPirates.get(0);
+    	Drone drone = getClosestDroneToLocation(game.getEnemyCities().get(0).getLocation(), enemyDrones);
+    	
+    	if (drone != null && checkAttack(myPirate, drone))
+    	{
+    		attack(myPirate, drone);
+    	}
+    	else if (drone != null)
+    	{
+    		goTo(myPirate, drone.getLocation());
+    	}
     }
     
     /**
@@ -211,7 +237,7 @@ public class MyBot implements PirateBot {
 		if (tempDest != null) {
 			game.setSail(myAircraft, tempDest);
 			if (myAircraft instanceof Pirate) {
-				game.debug("Pirate " + myAircraft + " goes to location:" + tempDest);
+				game.debug("Pirate " + myAircraft + " goes to final location:" + tempDest);
 			}
 			return true;
 		}
@@ -499,6 +525,30 @@ public class MyBot implements PirateBot {
     }
     
     /**
+	 * Finds closest drone to a given location
+	 * 
+	 * @param loc
+	 *            Given location
+	 * @param l
+	 *            List of drones       
+	 * 
+	 * @return closest drone
+	 */
+    private Drone getClosestDroneToLocation(Location loc, List<Drone> l)
+    {
+        int minDistance = this.maxDistance;
+        Drone closestObject=null;
+        for(Drone drone : l){
+            if(drone.distance(loc) < minDistance || closestObject == null)
+            {
+                minDistance = drone.distance(loc);
+                closestObject=drone;
+            }
+        }
+        return closestObject;
+    }
+    
+    /**
 	 * Finds closest pirate to a given location
 	 * 
 	 * @param loc
@@ -512,11 +562,11 @@ public class MyBot implements PirateBot {
     {
         int minDistance = this.maxDistance;
         Pirate closestObject=null;
-        for(Pirate p : l){
-            if(p.distance(loc) < minDistance || closestObject == null)
+        for(Pirate pirate : l){
+            if(pirate.distance(loc) < minDistance || closestObject == null)
             {
-                minDistance = p.distance(loc);
-                closestObject=p;
+                minDistance = pirate.distance(loc);
+                closestObject=pirate;
             }
         }
         return closestObject;
