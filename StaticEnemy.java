@@ -13,6 +13,7 @@ public class StaticEnemy {
 	public Pirate pirate;
 	public int turnsThatStatic;
 	private Location location;
+	public boolean isStatic;
 	
 	/**
 	 * Initializes all attributes and saves the pirates that is being watched
@@ -25,15 +26,27 @@ public class StaticEnemy {
 		this.pirate = pirate;
 		turnsThatStatic = 0;
 		location = pirate.getLocation();
+		isStatic = false;
 	}
 	
 	/**
 	 * Will be called every turn to identify possible stationary pirate
 	 * If pirate is not alive counter will be initialized
+	 * 
+	 * @param pirates
+	 * 			- For unknown reasons, Object pirate does not updates and keeps the original location,
+        	  	so the loops check for the same enemy pirate as the static one and updates the reference
 	 */
-	public void update(Pirate pirate)
+	public void update(List<Pirate> enemyPirates)
 	{
-	    this.pirate = pirate;
+		for (Pirate enemyPirate : enemyPirates)
+        {
+            if (pirate.id == enemyPirate.id)
+            {
+            	pirate = enemyPirate;
+            }
+        }
+		
 		if (pirate.getLocation().equals(location) && pirate.isAlive())
         {
             turnsThatStatic++;
@@ -42,6 +55,7 @@ public class StaticEnemy {
         {
         	location = pirate.getLocation();
             turnsThatStatic = 0;
+            isStatic = false;
         }
 	}
 	
