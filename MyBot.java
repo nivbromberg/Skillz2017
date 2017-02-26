@@ -14,6 +14,7 @@ public class MyBot implements PirateBot {
     private List<Drone> myDrones;
     private List<City> myCities;
     private int maxDistance;
+	private Decoy myDecoy;
 
     private List<StaticEnemy> staticEnemies;
     private MovingPirate[] movingPirates;
@@ -47,6 +48,7 @@ public class MyBot implements PirateBot {
 	        }
 	        checkSusp();
 	        
+		handleDecoy();
 	        handlePirates();
 	        handleDrones();
 	        movePirates();
@@ -184,6 +186,16 @@ public class MyBot implements PirateBot {
         	movingPirates[pirate.id] = new MovingPirate(pirate,maxDistance);
         }
     } 
+	
+	private void handleDecoy()
+	{
+		if (game.getMyself().turnsToDecoyReload == 0)
+		{
+			int rand = (int)(Math.random()*myPirates.size());
+			game.decoy(myPirates.get(rand));			
+		}
+		myDecoy = game.getMyself().decoy;		
+	}
     
     /**
 	 * Returns all enemy aircrafts that can be attacked by myPirate according to
