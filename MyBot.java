@@ -7,9 +7,10 @@ public class MyBot implements PirateBot {
 	// CONSTANTS
 	private final int attackingDistanceFromCity = 0;
 	private final int defendingDistanceFromCity = 3;
-	private final int closeDroneToCityDistance = 5;
+	private final int closeDroneToCityDistance = 6;
 	private final int closePirateToCityDistance = 5;
 	private final int droneDangerDistanceFromEnemyPirate = 4;
+	private double weightDistanceMultiplier=4;
 
 	// GAME DETAILS
 	private PirateGame game;
@@ -18,9 +19,11 @@ public class MyBot implements PirateBot {
 	private List<Pirate> myPirates;
 	private List<Island> neutralIslands;
 	private List<Island> enemyIslands;
+	private List<Island> neutralAndEnemyIslands;
 	private List<Island> myIslands;
 	private List<Drone> myDrones;
 	private List<City> myCities;
+	private List<City> enemyCities;
 	private int maxDistance;
 
 	private List<Enemy> staticEnemies;
@@ -59,8 +62,12 @@ public class MyBot implements PirateBot {
 
 		if (drone != null && checkAttack(myPirate, drone)) {
 			attack(myPirate, drone);
-		} else if (drone != null) {
+		} else if (drone != null && drone.distance(enemyCities.get(0))<=closeDroneToCityDistance) {
 			goTo(myPirate, drone.getLocation());
+		}
+		else
+		{
+		    goTo(myPirate,enemyCities.get(0).location);
 		}
 	}
 
@@ -140,14 +147,21 @@ public class MyBot implements PirateBot {
 		myPirates = game.getMyLivingPirates();
 		neutralIslands = game.getNeutralIslands();
 		enemyIslands = game.getEnemyIslands();
+		neutralAndEnemyIslands=new ArrayList<>(neutralIslands);
+		neutralAndEnemyIslands.addAll(enemyIslands);
 		myIslands = game.getMyIslands();
 		myDrones = game.getMyLivingDrones();
 		myCities = game.getMyCities();
+		enemyCities = game.getEnemyCities();
 		maxDistance = ((int) Math.sqrt(Math.pow(game.getRowCount(), 2) + Math.pow(game.getColCount(), 2))) + 1;
 
 		movingPirates = new MyPirate[game.getAllMyPirates().size()];
 		for (Pirate pirate : myPirates) {
 			movingPirates[pirate.id] = new MyPirate(pirate, maxDistance);
+		}
+		if(game.getTurn()==1){
+		    if(neutralIslands.size()==3 && myCities.size()==1 && enemyCities.size()==1)
+		    weightDistanceMultiplier=6;
 		}
 	}
 
@@ -388,15 +402,18 @@ public class MyBot implements PirateBot {
 			// 2.enemy islands
 			// 3.my islands
 			Island bestIsland = null;
-			if (!neutralIslands.isEmpty()) {
+			/*if (!neutralIslands.isEmpty()) {
 				City closestCity = getClosestCity(pirate, myCities);
 				Island closestIslandToPirate = getClosestIsland(pirate, neutralIslands),
 						closestIslandToCity = getClosestIsland(closestCity, neutralIslands);
+						game.debug(pirate+","+closestIslandToPirate+","+closestIslandToCity);
 				if (closestIslandToPirate.equals(closestIslandToCity))
 					bestIsland = closestIslandToPirate;
 				else {
-					int weight1 = pirate.distance(closestIslandToPirate) * closestCity.distance(closestIslandToPirate);
-					int weight2 = pirate.distance(closestIslandToCity) * closestCity.distance(closestIslandToCity);
+					double weight1 = pirate.distance(closestIslandToPirate) +weightDistanceMultiplier*closestCity.distance(closestIslandToPirate);
+					
+					double weight2 = pirate.distance(closestIslandToCity) + weightDistanceMultiplier*closestCity.distance(closestIslandToCity);
+					game.debug(pirate+","+weight1+","+weight2+","+weightDistanceMultiplier);
 					if (weight1 < weight2)
 						bestIsland = closestIslandToPirate;
 					else if (weight1 == weight2) {
@@ -411,7 +428,30 @@ public class MyBot implements PirateBot {
 
 			} else if (!enemyIslands.isEmpty()) {
 				bestIsland = getClosestIsland(pirate, enemyIslands);
-			} else if (!myIslands.isEmpty()) {
+			}*/
+			if(!neutralAndEnemyIslands.isEmpty()){
+			    City closestCity = getClosestCity(pirate, myCities);
+				Island closestIslandToPirate = getClosestIsland(pirate, neutralAndEnemyIslands),
+						closestIslandToCity = getClosestIsland(closestCity, neutralAndEnemyIslands);
+						game.debug(pirate+","+closestIslandToPirate+","+closestIslandToCity);
+				if (closestIslandToPirate.equals(closestIslandToCity))
+					bestIsland = closestIslandToPirate;
+				else {
+					double weight1 = pirate.distance(closestIslandToPirate) +weightDistanceMultiplier*closestCity.distance(closestIslandToPirate);
+					
+					double weight2 = pirate.distance(closestIslandToCity) + weightDistanceMultiplier*closestCity.distance(closestIslandToCity);
+					game.debug(pirate+","+weight1+","+weight2+","+weightDistanceMultiplier);
+					if (weight1 < weight2)
+						bestIsland = closestIslandToPirate;
+					else if (weight1 == weight2) {
+						List<Island> temp = new ArrayList<>();
+						temp.add(closestIslandToCity);
+						temp.add(closestIslandToPirate);
+						bestIsland = getClosestIsland(pirate, temp);
+					} else {
+						bestIsland = closestIslandToCity;
+					}
+			}}else if (!myIslands.isEmpty()) {
 				bestIsland = getClosestIsland(pirate, myIslands);
 			}
 			if (bestIsland != null) {
@@ -427,8 +467,8 @@ public class MyBot implements PirateBot {
 				// removed from the neutral islands list in order to not send
 				// multiple pirates to the same neutral island (strategic
 				// option).
-				if (bestIsland.owner.equals(game.getNeutral()))
-					neutralIslands.remove(bestIsland);
+			//	if (bestIsland.owner.equals(game.getNeutral()))
+			//		neutralIslands.remove(bestIsland);
 
 				// removes pirate from pirates list in order to not assign
 				// multiple actions to the same pirate.
@@ -535,8 +575,6 @@ public class MyBot implements PirateBot {
 
 	private Island getClosestIsland(City city, List<Island> islands) {
 		int minDistance = this.maxDistance;
-		if (city == null)
-			return getClosestIsland(city, islands);
 		Island closestObject = null;
 		for (Island i : islands) {
 			if (city.distance(i) < minDistance || closestObject == null) {
