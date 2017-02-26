@@ -43,7 +43,8 @@ public class MyBot implements PirateBot {
 		
 		else if(game.getAllIslands().size()==3 && myCities.size()==1 && enemyCities.size()==1 && game.getAllMyPirates().size()==5)
 		{
-			Snoonit();	
+			int toRemove = handleDecoy();
+			Snoonit(toRemove);	
 		}
 
 		else // MAP : OTHER
@@ -75,7 +76,7 @@ public class MyBot implements PirateBot {
 		}
 	}
 	
-	private void Snoonit()
+	private void Snoonit(int toRemove)
 	{
 		Island island=null;
 		for(Island i:game.getAllIslands())
@@ -86,7 +87,8 @@ public class MyBot implements PirateBot {
 				break;
 			}
 		}
-		List<Pirate> myPirates=game.getAllMyPirates();
+		List<Pirate> myPirates = game.getAllMyPirates();
+		myPirates.remove(game.getMyPirateById(toRemove));
 		myPirates.remove(game.getMyPirateById(4));
 		handlePiratesImpulseAttack(myPirates);
 		for (Pirate pirate:myPirates)
@@ -201,10 +203,14 @@ public class MyBot implements PirateBot {
 	/**
 	 * Handles decoy pirates
 	 * 
+	 * @return
+	 * 		The id of the ship removed. If no ship was removed, return -1
+	 * 
 	 * @since 26/2/2017
 	 */
-	private void handleDecoy()
+	private int handleDecoy()
 	{
+		int x = -1;
 		if (locationQueue == null)
 		{
 			locationQueue = new LocationQueue();
@@ -230,6 +236,7 @@ public class MyBot implements PirateBot {
 			int rand = (int)(Math.random()*myPirates.size());
 			game.decoy(myPirates.get(rand));	
 			myPirates.remove(rand);
+			x = rand;
 		}
 		myDecoy = game.getMyself().decoy;
 		
@@ -237,6 +244,8 @@ public class MyBot implements PirateBot {
 		{
 			goTo(myDecoy, locationQueue.getNext(myDecoy.location));
 		}
+		
+		return x;
 	}
 
 	/**
