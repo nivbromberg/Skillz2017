@@ -28,6 +28,9 @@ public class MyBot implements PirateBot {
 
 	private List<Enemy> staticEnemies;
 	private MyPirate[] movingPirates;
+	
+	private Decoy myDecoy;
+	private LocationQueue locationQueue = null;
 
 	@Override
 	public void doTurn(PirateGame game) {
@@ -37,13 +40,8 @@ public class MyBot implements PirateBot {
 		{
 			shaldag();
 		}
-
-		/*
-		 * else if (myCities.size() == 1 && game.getEnemyCities().size() == 0)
-		 * // MAP : gal & deborah { gal(); }
-		 */
 		
-		else if(game.getAllIslands().size()==3 && myCities.size()==1 && enemyCities.size()==1 && myPirates.size()==5)
+		else if(game.getAllIslands().size()==3 && myCities.size()==1 && enemyCities.size()==1 && game.getAllMyPirates().size()==5)
 		{
 			Snoonit();	
 		}
@@ -51,7 +49,8 @@ public class MyBot implements PirateBot {
 		else // MAP : OTHER
 		{
 			checkSusp();
-
+			
+			handleDecoy();
 			handlePirates();
 			handleDrones();
 			movePirates();
@@ -74,25 +73,6 @@ public class MyBot implements PirateBot {
 		{
 		    goTo(myPirate,enemyCities.get(0).location);
 		}
-	}
-
-	/**
-	 * Handles the Gal & Deborah maps by getting the drones around the city, and
-	 * attacking the pirates guarding it
-	 */
-	private void gal() {
-		for (Pirate myPirate : myPirates) // send all my pirates to attack enemy
-											// pirates
-		{
-			Pirate enemyPirate = getClosestPirate(myPirate, enemyPirates);
-			if (checkAttack(myPirate, enemyPirate)) {
-				attack(myPirate, enemyPirate);
-			} else {
-				goTo(myPirate, enemyPirate.getLocation());
-			}
-		}
-
-		/** NEEDS TO BE COMPLETED **/
 	}
 	
 	private void Snoonit()
@@ -122,19 +102,21 @@ public class MyBot implements PirateBot {
 			List<Aircraft> attackableEnemies = attackableEnemies(pirate);
 			if (!attackableEnemies.isEmpty()) {
 				attack(pirate, attackableEnemies.get(0));
-			}else{
-			Drone drone = getClosestDroneToLocation(game.getEnemyCities().get(0).getLocation(), enemyDrones);
-
-		if (drone != null && checkAttack(pirate, drone)) {
-			attack(pirate, drone);
-		} else if (drone != null && drone.distance(enemyCities.get(0))<=closeDroneToCityDistance) {
-			goTo(pirate, drone.getLocation());
-		}
-			else
-			{
-				goTo(pirate,enemyCities.get(0).location);
 			}
-		}}
+			else {
+				Drone drone = getClosestDroneToLocation(game.getEnemyCities().get(0).getLocation(), enemyDrones);
+	
+				if (drone != null && checkAttack(pirate, drone)) {
+					attack(pirate, drone);
+				}
+				else if (drone != null && drone.distance(enemyCities.get(0))<=closeDroneToCityDistance) {
+					goTo(pirate, drone.getLocation());
+				}
+				else {
+					goTo(pirate,enemyCities.get(0).location);
+				}
+			}
+		}
 	}
 
 	/**
@@ -169,14 +151,18 @@ public class MyBot implements PirateBot {
 			for (Pirate enemyPirate : game.getAllEnemyPirates()) {
 				staticEnemies.add(new Enemy(enemyPirate));
 			}
-		} else {
+		}
+		else {
 			/*
 			 * For unknown reasons, Object pirate does not updates and keeps the
 			 * original location, so the loops check for the same enemy pirate
 			 * as the static one and updates the reference
 			 */
-			for (Enemy staticPirate : staticEnemies) {
-				staticPirate.update(game.getAllEnemyPirates());
+			for (Enemy staticPirate : staticEnemies) {				
+				if (staticPirate != null && staticPirate.pirate != null)
+				{
+					staticPirate.update(game.getAllEnemyPirates());
+				}
 			}
 		}
 	}
@@ -209,6 +195,47 @@ public class MyBot implements PirateBot {
 		if(game.getTurn()==1){
 		    if(neutralIslands.size()==3 && myCities.size()==1 && enemyCities.size()==1)
 		    weightDistanceMultiplier=6;
+		}
+	}
+	
+	/**
+	 * Handles decoy pirates
+	 * 
+	 * @since 26/2/2017
+	 */
+	private void handleDecoy()
+	{
+		if (locationQueue == null)
+		{
+			locationQueue = new LocationQueue();
+			HashSet<Location> allLocations = new HashSet<>();
+			for (Island island : game.getAllIslands())
+			{
+				allLocations.add(island.getLocation());
+			}
+			
+			for (City city : enemyCities)
+			{
+				allLocations.add(city.getLocation());
+			}
+			
+			for (Location location : allLocations)
+			{
+				locationQueue.add(location);
+			}
+		}
+		
+		if (game.getMyself().turnsToDecoyReload == 0)
+		{
+			int rand = (int)(Math.random()*myPirates.size());
+			game.decoy(myPirates.get(rand));	
+			myPirates.remove(rand);
+		}
+		myDecoy = game.getMyself().decoy;
+		
+		if (myDecoy != null)
+		{
+			goTo(myDecoy, locationQueue.getNext(myDecoy.location));
 		}
 	}
 
