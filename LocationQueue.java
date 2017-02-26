@@ -2,9 +2,6 @@ package bots;
 
 import pirates.*;
 import java.util.*;
-import java.util.concurrent.LinkedBlockingQueue;
-
-import javax.tools.JavaFileManager.Location;
 
 /**
  * The purpose of this class is to handle aircraft that has queue of location to go through
