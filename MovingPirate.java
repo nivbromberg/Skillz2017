@@ -10,7 +10,7 @@ import java.util.*;
  * @since 24/02/2017
  */
 
-public class MovingPirate {
+public class MyPirate {
 	public Pirate pirate;
 	private Set<Location> destinations;
 	private int maxDistance;
@@ -24,7 +24,7 @@ public class MovingPirate {
 	 * @param maxDistance
 	 * 			  The maximum distance possible in the game
 	 */
-	public MovingPirate(Pirate pirate, int maxDistance)
+	public MyPirate(Pirate pirate, int maxDistance)
 	{
 		this.pirate = pirate;
 		this.maxDistance = maxDistance;
