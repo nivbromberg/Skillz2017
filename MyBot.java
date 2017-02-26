@@ -44,7 +44,8 @@ public class MyBot implements PirateBot {
 		else if(game.getAllIslands().size()==3 && myCities.size()==1 && enemyCities.size()==1 && game.getAllMyPirates().size()==5)
 		{
 			int toRemove = handleDecoy();
-			Snoonit(toRemove);	
+			Snoonit(toRemove);
+			handleDrones();
 		}
 
 		else // MAP : OTHER
