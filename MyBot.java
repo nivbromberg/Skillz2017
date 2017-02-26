@@ -430,6 +430,7 @@ public class MyBot implements PirateBot {
 	 */
 	private void handlePirates() {
 		List<Pirate> unassignedPirates = new ArrayList<Pirate>(this.myPirates);
+		handleRushToDefendPirates(unassignedPirates);
 		handlePiratesImpulseAttack(unassignedPirates);
 		handlePiratesToIslands(unassignedPirates);
 		handleUnassignedPirates(unassignedPirates);
@@ -566,6 +567,28 @@ public class MyBot implements PirateBot {
 		}
 	}
 
+	
+	private void handleRushToDefendPirates(List<Pirate> myPirates) {
+		List<Pirate> piratesToRemove = new ArrayList<Pirate>();
+		City closestCity;
+		for (Pirate pirate : myPirates) {
+			closestCity = getClosestCity(pirate, myCities);
+			Drone drone = getClosestDroneToLocation(closestCity);
+			int reqRangeCity = 2*closeDroneToCityDistance;
+			int reqRangePirate = 2*pirate.getAttackRange();
+			if(drone.distance(closestCity)<=reqRange||drone.distance(pirate)<=reqRange)
+			{   
+				
+			}
+			}
+		}
+
+		for (Pirate pirate : piratesToRemove) {
+			myPirates.remove(pirate);
+		}
+	}
+	
+	
 	/**
 	 * Handles movement of all unassigned pirates (from parameter).<br>
 	 * Priority: 1. Send every unassigned pirate to conquer its closest neutral
