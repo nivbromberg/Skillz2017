@@ -7,7 +7,7 @@ public class MyBot implements PirateBot {
 	// CONSTANTS
 	private final int attackingDistanceFromCity = 0;
 	private final int defendingDistanceFromCity = 3;
-	private final int closeDroneToCityDistance = 6;
+	private final int closeDroneToCityDistance = 7;
 	private final int closePirateToCityDistance = 5;
 	private final int droneDangerDistanceFromEnemyPirate = 4;
 	private double weightDistanceMultiplier=3.5;
@@ -116,7 +116,8 @@ public class MyBot implements PirateBot {
 					goTo(pirate, drone.getLocation());
 				}
 				else {
-					goTo(pirate,enemyCities.get(0).location);
+					//goTo(pirate,enemyCities.get(0).location);
+					goTo(pirate,new Location(8,30));
 				}
 			}
 		}
