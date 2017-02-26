@@ -31,7 +31,12 @@ public class MyBot implements PirateBot {
         	shaldag();
         }
         
-        else 
+        /*else if (myCities.size() == 1 && game.getEnemyCities().size() == 0) // MAP : gal & deborah
+        {
+        	gal();
+        }*/
+        
+        else // MAP : OTHER
         {
 	        if (stayThere)
 	        {
@@ -50,6 +55,7 @@ public class MyBot implements PirateBot {
     
     /**
 	 * Handles the Shaldag map
+	 * by chasing drones before they arrive in the city
 	 */
     private void shaldag()
     {
@@ -64,6 +70,28 @@ public class MyBot implements PirateBot {
     	{
     		goTo(myPirate, drone.getLocation());
     	}
+    }
+    
+    /**
+	 * Handles the Gal & Deborah maps
+	 * by getting the drones around the city, and attacking the pirates guarding it
+	 */
+    private void gal()
+    {
+    	for (Pirate myPirate : myPirates) // send all my pirates to attack enemy pirates
+    	{
+    		Pirate enemyPirate = getClosestPirate(myPirate,enemyPirates);
+    		if (checkAttack(myPirate, enemyPirate))
+    		{
+    			attack(myPirate, enemyPirate);
+    		}
+    		else
+    		{
+    			goTo(myPirate, enemyPirate.getLocation());
+    		}
+    	}
+    	
+    	/** NEEDS TO BE COMPLETED **/
     }
     
     /**
