@@ -568,18 +568,18 @@ public class MyBot implements PirateBot {
 	}
 
 	
-	private void handleRushToDefendPirates(List<Pirate> myPirates) {
+		private void handleRushToDefendPirates(List<Pirate> myPirates) {
 		List<Pirate> piratesToRemove = new ArrayList<Pirate>();
 		City closestCity;
 		for (Pirate pirate : myPirates) {
 			closestCity = getClosestCity(pirate, myCities);
-			Drone drone = getClosestDroneToLocation(closestCity);
-			int reqRangeCity = 2*closeDroneToCityDistance;
-			int reqRangePirate = 2*pirate.getAttackRange();
-			if(drone.distance(closestCity)<=reqRange||drone.distance(pirate)<=reqRange)
+			Drone drone = getClosestDroneToLocation(closestCity.location, enemyDrones);
+			double reqRangeCity = 1.5*closeDroneToCityDistance;
+			double reqRangePirate = 2.5*game.getAttackRange();
+			if(drone!=null && drone.distance(closestCity)<=reqRangeCity && drone.distance(pirate)<=reqRangePirate)
 			{   
-				
-			}
+				rushToDrone(pirate,drone);
+				piratesToRemove.add(pirate);
 			}
 		}
 
@@ -755,5 +755,13 @@ public class MyBot implements PirateBot {
 			}
 		}
 		return closestObject;
+	}
+	
+	private void rushToDrone(Pirate myPirate, Drone drone)
+	{
+	     if(checkAttack(myPirate, drone))
+	        attack(myPirate, drone);
+	     else
+	        goTo(myPirate, drone.location);
 	}
 }
