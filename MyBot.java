@@ -24,6 +24,7 @@ public class MyBot implements PirateBot {
 	private List<Drone> myDrones;
 	private List<City> myCities;
 	private List<City> enemyCities;
+	private List<City> possibleCities;
 	private int maxDistance;
 
 	private List<Enemy> staticEnemies;
@@ -228,7 +229,7 @@ public class MyBot implements PirateBot {
 	 * @author Niv Bromberg
 	 */
 	private void checkSusp() {
-		if (myCities.size() > 0) {
+		if (possibleCities.size() > 0) {
 			updateEnemyLocations();
 
 			for (Enemy enemyPirate : staticEnemies) {
@@ -284,6 +285,8 @@ public class MyBot implements PirateBot {
 		myIslands = game.getMyIslands();
 		myDrones = game.getMyLivingDrones();
 		myCities = game.getMyCities();
+		possibleCities = new ArrayList<City>(myCities);
+		possibleCities.addAll(game.getNeutralCities());
 		enemyCities = game.getEnemyCities();
 		maxDistance = ((int) Math.sqrt(Math.pow(game.getRowCount(), 2) + Math.pow(game.getColCount(), 2))) + 1;
 
@@ -463,7 +466,7 @@ public class MyBot implements PirateBot {
 	}
 
 	private boolean goToDrone(Drone drone) {
-		Location tempDest = chooseTempDestForDrone(drone, getClosestCity(drone, myCities).location, 0);
+		Location tempDest = chooseTempDestForDrone(drone, getClosestCity(drone, possibleCities).location, 0);
 		if (tempDest != null) {
 			game.setSail(drone, tempDest);
 			return true;
@@ -665,7 +668,7 @@ public class MyBot implements PirateBot {
 			 * getClosestIsland(pirate, enemyIslands); }
 			 */
 			if (!neutralAndEnemyIslands.isEmpty()) {
-				City closestCity = getClosestCity(pirate, myCities);
+				City closestCity = getClosestCity(pirate, possibleCities);
 				Island closestIslandToPirate = getClosestIsland(pirate, neutralAndEnemyIslands),
 						closestIslandToCity = getClosestIsland(closestCity, neutralAndEnemyIslands);
 				game.debug(pirate + "," + closestIslandToPirate + "," + closestIslandToCity);
@@ -775,9 +778,7 @@ public class MyBot implements PirateBot {
 	 * @since 22.2.17
 	 */
 	private void handleDrones() {
-		// game.debug("num of drones:"+myDrones.size());
-		List<City> possibleCities = myCities;
-		possibleCities.addAll(game.getNeutralCities());
+		// game.debug("num of drones:"+myDrones.size());		
 		
 		for (Drone d : myDrones) {
 			goTo(d, getClosestCity(d, possibleCities).getLocation());
