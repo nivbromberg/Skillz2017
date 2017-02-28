@@ -30,13 +30,15 @@ public class MyBot implements PirateBot {
 	private MyPirate[] movingPirates;
 
 	private Decoy myDecoy;
+	private Decoy enemyDecoy;
+	private int numberOfEnemyPirates;
 	private LocationQueue locationQueue = null;
 
 	@Override
 	public void doTurn(PirateGame game) {
 		init(game);
 
-		if (myCities.size() == 0) // MAP : shaldag
+		if (myCities.size() == 0 && game.getNeutralCities().size() == 0) // MAP : shaldag
 		{
 			shaldag();
 		}
@@ -48,12 +50,10 @@ public class MyBot implements PirateBot {
 			handleDrones();
 		}
 
-		else if (myCities.size() == 1 && enemyCities.isEmpty()) {
-			if(game.getAllEnemyPirates().size()==5)
-			    gal();
-		    else
-		        dvora();
-		}
+		else if (myCities.size() == 1 && enemyCities.isEmpty() && game.getAllEnemyPirates().size()==5)
+		    gal();
+		else if (myCities.size() == 1 && enemyCities.isEmpty() && game.getAllEnemyPirates().size()==3)
+	        dvora();
 
 		else // MAP : OTHER
 		{
@@ -305,7 +305,9 @@ public class MyBot implements PirateBot {
 	 * @since 26/2/2017
 	 */
 	private int handleDecoy() {
-		int x = -1;
+		//findEnemyDecoy();
+		
+		int decoyId = -1;
 		if (locationQueue == null) {
 			locationQueue = new LocationQueue();
 			HashSet<Location> allLocations = new HashSet<>();
@@ -326,7 +328,7 @@ public class MyBot implements PirateBot {
 			int rand = (int) (Math.random() * myPirates.size());
 			game.decoy(myPirates.get(rand));
 			myPirates.remove(rand);
-			x = rand;
+			decoyId = rand;
 		}
 		myDecoy = game.getMyself().decoy;
 
@@ -334,7 +336,43 @@ public class MyBot implements PirateBot {
 			goTo(myDecoy, locationQueue.getNext(myDecoy.location));
 		}
 
-		return x;
+		return decoyId;
+	}
+	
+	/**
+	 * Manage to get who is the enemy decoy
+	 * 
+	 * @since 28/2/2017
+	 */
+	private void findEnemyDecoy() {
+		if (game.getTurn() == 1) {
+			numberOfEnemyPirates = game.getAllEnemyPirates().size();
+		}
+		else {
+			int temp  = game.getAllEnemyPirates().size();
+			if (temp > numberOfEnemyPirates) {
+				int[] id = new int[game.getAllEnemyPirates().size()];
+				for (int i = 0; i < id.length; i++) { id[i] = 0; }
+				
+				for (Pirate enemyPirate : game.getAllEnemyPirates()) {					
+					id[enemyPirate.id]++;
+				}
+				
+				int decoyId = -1;
+				for (int i = 0; i < id.length; i++) {
+					if (id[i] > 1)
+					{
+						decoyId = i;
+						break;
+					}
+				}
+				
+				if (decoyId != -1) // if decoy exists
+				{
+					decoyId = decoyId;
+				}
+			}
+		}
 	}
 
 	/**
@@ -539,7 +577,10 @@ public class MyBot implements PirateBot {
 	 */
 	private void handlePirates() {
 		List<Pirate> unassignedPirates = new ArrayList<Pirate>(this.myPirates);
-		handleRushToDefendPirates(unassignedPirates);
+		if (enemyCities.size() > 0)
+		{
+			handleRushToDefendPirates(unassignedPirates);
+		}
 		handlePiratesImpulseAttack(unassignedPirates);
 		handlePiratesToIslands(unassignedPirates);
 		handleUnassignedPirates(unassignedPirates);
@@ -682,12 +723,11 @@ public class MyBot implements PirateBot {
 		List<Pirate> piratesToRemove = new ArrayList<Pirate>();
 		City closestCity;
 		for (Pirate pirate : myPirates) {
-			closestCity = getClosestCity(pirate, myCities);
+			closestCity = getClosestCity(pirate, enemyCities);
 			Drone drone = getClosestDroneToLocation(closestCity.location, enemyDrones);
-			double reqRangeCity = 1.5 * closeDroneToCityDistance;
-			double reqRangePirate = 2.5 * game.getAttackRange();
-			if (drone != null && drone.distance(closestCity) <= reqRangeCity
-					&& drone.distance(pirate) <= reqRangePirate) {
+			double reqRangeCity = 3 * closeDroneToCityDistance;
+			double reqRangePirate = 3 * game.getAttackRange();
+			if (drone != null && drone.distance(closestCity) <= reqRangeCity && drone.distance(pirate) <= reqRangePirate) {
 				rushToDrone(pirate, drone);
 				piratesToRemove.add(pirate);
 			}
@@ -736,9 +776,11 @@ public class MyBot implements PirateBot {
 	 */
 	private void handleDrones() {
 		// game.debug("num of drones:"+myDrones.size());
-
+		List<City> possibleCities = myCities;
+		possibleCities.addAll(game.getNeutralCities());
+		
 		for (Drone d : myDrones) {
-			goTo(d, getClosestCity(d, myCities).getLocation());
+			goTo(d, getClosestCity(d, possibleCities).getLocation());
 		}
 	}
 
