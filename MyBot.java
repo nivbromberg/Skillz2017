@@ -442,19 +442,18 @@ public class MyBot implements PirateBot {
 	 * @see MyBot_22_2#chooseRandomTempLocation(Aircraft, Location)
 	 */
 	private boolean goTo(Aircraft myAircraft, Location finalDest) {
-		Location tempDest = chooseTempLocation(myAircraft, finalDest);
+	    if (myAircraft instanceof Drone) { return goToDrone((Drone) myAircraft); }
+		Location tempDest = chooseTempLocation((Pirate) myAircraft, finalDest);
 		if (tempDest != null) {
 			game.setSail(myAircraft, tempDest);
-			if (myAircraft instanceof Pirate) {
-				game.debug("Pirate " + myAircraft + " goes to final location:" + tempDest);
-			}
 			return true;
 		}
 		return false;
 	}
 
 	private boolean goToDrone(Drone drone) {
-		Location tempDest = chooseTempDestForDrone(drone, getClosestCity(drone, possibleCities).location, 0);
+		//Location tempDest = chooseTempDestForDrone(drone, getClosestCity(drone, possibleCities).location, 0);
+		Location tempDest = chooseTempLocation(drone, getClosestCity(drone, possibleCities).location);
 		if (tempDest != null) {
 			game.setSail(drone, tempDest);
 			return true;
@@ -551,8 +550,41 @@ public class MyBot implements PirateBot {
 		return null;
 	}
 	
-	private Location chooseTempLocation(Aircraft myAircraft, Location finalDest) {
-		List<Location> optionalTempDest = game.getSailOptions(myAircraft, finalDest);
+	private Location chooseTempLocation(Drone myDrone, Location finalDest) {
+		List<Location> optionalTempDest = game.getSailOptions(myDrone, finalDest);
+		int count = 0;
+		Location currentLocation;
+		boolean willGoNearEnemyPirate = false, willGoNearMyDrone = false, willGoNearMyPirate = false;
+		while (count < optionalTempDest.size()) {
+		    currentLocation = optionalTempDest.get(count);
+		    
+			willGoNearEnemyPirate = isInAttackRange(currentLocation,enemyPirates);
+            willGoNearMyDrone = isNearDrone(currentLocation, myDrones);
+            willGoNearMyPirate = isInAttackRange(currentLocation,myPirates);
+            
+            if (!willGoNearEnemyPirate && willGoNearMyPirate && willGoNearMyDrone)
+            {
+                return currentLocation;
+            }
+            
+            if (!willGoNearEnemyPirate && willGoNearMyPirate)
+            {
+                return currentLocation;
+            }
+            
+            if (!willGoNearEnemyPirate)
+            {
+                return currentLocation;
+            }
+            
+            count++;
+		}
+		
+		return chooseRandomTempLocation(myDrone, finalDest);
+	}
+	
+	private Location chooseTempLocation(Pirate myPirate, Location finalDest) {
+		List<Location> optionalTempDest = game.getSailOptions(myPirate, finalDest);
 		int count = 0;
 		Location currentLocation;
 		boolean willGoNearEnemyPirate = false, willGoNearNeutralIsland = false, willGoNearEnemyDrone = false,
@@ -566,7 +598,7 @@ public class MyBot implements PirateBot {
             willGoNearMyDrone = isNearDrone(currentLocation, myDrones);
             willGoNearMyPirate = isInAttackRange(currentLocation,myPirates);
             
-            if (!willGoNearEnemyPirate && willGoNearNeutralIsland && willGoNearEnemyDrone && willGoNearMyDrone && willGoNearMyPirate)
+            if (willGoNearEnemyPirate && willGoNearNeutralIsland && willGoNearEnemyDrone && willGoNearMyDrone && willGoNearMyPirate)
             {
                 return currentLocation;
             }
@@ -594,7 +626,7 @@ public class MyBot implements PirateBot {
             count++;
 		}
 		
-		return chooseRandomTempLocation(myAircraft, finalDest);
+		return chooseRandomTempLocation(myPirate, finalDest);
 	}
 	
 	private boolean isInAttackRange(Location location, List<Pirate> pirates)
@@ -670,7 +702,6 @@ public class MyBot implements PirateBot {
 	 * @since 22.2.17
 	 */
 	private void handlePiratesImpulseAttack(List<Pirate> myPirates) {
-	    game.debug("Impulse attack: "+myPirates);
 		List<Pirate> piratesToRemove = new ArrayList<Pirate>();
 
 		for (Pirate pirate : myPirates) {
@@ -696,7 +727,7 @@ public class MyBot implements PirateBot {
 				piratesToRemove.add(pirate);
 			}
 		}
-
+        game.debug("Impulse attack: "+piratesToRemove);
 		for (Pirate pirate : piratesToRemove) {
 			myPirates.remove(pirate);
 			movingPirates[pirate.id].didAttack = true;
@@ -783,7 +814,6 @@ public class MyBot implements PirateBot {
 	
 	private void handlePiratesToIslands(List<Pirate> myPirates)
 	{
-	    game.debug("To Islands: "+myPirates);
 	    List<Pirate> piratesToRemove = new ArrayList<Pirate>();
 	    List<Island> neutralAndEnemyIslands = new ArrayList<>(this.neutralAndEnemyIslands);
 	    MyIsland[] islands = new MyIsland[neutralAndEnemyIslands.size()];
@@ -816,7 +846,7 @@ public class MyBot implements PirateBot {
     	        }
 	        }
 	    }
-	    
+	    game.debug("To Islands: "+piratesToRemove);
 	    for (Pirate pirate : piratesToRemove) {
 			myPirates.remove(pirate);
 		}
@@ -835,19 +865,23 @@ public class MyBot implements PirateBot {
 	}
 
 	private void handleRushToDefendPirates(List<Pirate> myPirates) {
-	    game.debug("Rush to Defend: "+myPirates);
 		List<Pirate> piratesToRemove = new ArrayList<Pirate>();
+		double reqRangeCity = 2 * closeDroneToCityDistance;
+    	double reqRangePirate = 3 * game.getAttackRange();
+		game.debug("RANGE TO CITY "+reqRangeCity);
+		game.debug("ATTACK RANGE FROM PIRATE "+reqRangePirate);
 		for (Pirate pirate : myPirates) {
 		    for(City c : neutralAndEnemyCities)
     		    {
     			Drone drone = getClosestDroneToLocation(c.location, enemyDrones);
-    			double reqRangeCity = 2 * closeDroneToCityDistance;
-    			double reqRangePirate = 2 * game.getAttackRange();
+    			
     			if(game.getNeutralCities().contains(c))
     			{
     			    reqRangeCity*=5;
     			    reqRangePirate*=3;
     			}
+    			if (drone != null)
+    			    game.debug("RUSH : D"+drone.id+" P"+pirate.id+"/ DC "+drone.distance(c)+"/ DP "+drone.distance(pirate));
     			if (drone != null && drone.distance(c) <= reqRangeCity && drone.distance(pirate) <= reqRangePirate) {
     				rushToDrone(pirate, drone);
     				piratesToRemove.add(pirate);
@@ -855,7 +889,7 @@ public class MyBot implements PirateBot {
     			}
     		}
 		}
-
+        game.debug("Rush to Defend: "+piratesToRemove);
 		for (Pirate pirate : piratesToRemove) {
 			myPirates.remove(pirate);
 			movingPirates[pirate.id].didAttack = true;
