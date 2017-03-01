@@ -24,6 +24,8 @@ public class MyBot implements PirateBot {
 	private List<Drone> myDrones;
 	private List<City> myCities;
 	private List<City> enemyCities;
+	private List<City> neutralCities;
+	private List<City> neutralAndEnemyCities;
 	private List<City> possibleCities;
 	private int maxDistance;
 
@@ -288,6 +290,9 @@ public class MyBot implements PirateBot {
 		possibleCities = new ArrayList<City>(myCities);
 		possibleCities.addAll(game.getNeutralCities());
 		enemyCities = game.getEnemyCities();
+		neutralCities=game.getNeutralCities();
+		neutralAndEnemyCities=new ArrayList<>(enemyCities);
+		neutralAndEnemyCities.addAll(neutralCities);
 		maxDistance = ((int) Math.sqrt(Math.pow(game.getRowCount(), 2) + Math.pow(game.getColCount(), 2))) + 1;
 
 		movingPirates = new MyPirate[game.getAllMyPirates().size()];
@@ -726,10 +731,15 @@ public class MyBot implements PirateBot {
 		List<Pirate> piratesToRemove = new ArrayList<Pirate>();
 		City closestCity;
 		for (Pirate pirate : myPirates) {
-			closestCity = getClosestCity(pirate, enemyCities);
+			closestCity = getClosestCity(pirate, neutralAndEnemyCities);
 			Drone drone = getClosestDroneToLocation(closestCity.location, enemyDrones);
-			double reqRangeCity = 3 * closeDroneToCityDistance;
-			double reqRangePirate = 3 * game.getAttackRange();
+			double reqRangeCity = 2 * closeDroneToCityDistance;
+			double reqRangePirate = 2 * game.getAttackRange();
+			if(game.getNeutralCities().contains(closestCity))
+			{
+			    reqRangeCity*=2;
+			    reqRangePirate*=2;
+			}
 			if (drone != null && drone.distance(closestCity) <= reqRangeCity && drone.distance(pirate) <= reqRangePirate) {
 				rushToDrone(pirate, drone);
 				piratesToRemove.add(pirate);
