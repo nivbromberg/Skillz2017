@@ -92,27 +92,6 @@ public class MyBot implements PirateBot {
 		}
 	}
 	
-	/*private void dvora() {
-		List<Pirate> unassignedPirates = new ArrayList<Pirate>(this.myPirates);
-		handlePiratesImpulseAttack(unassignedPirates);
-		if (myIslands.isEmpty()) {
-			for (Pirate pirate : unassignedPirates) {
-			    goTo(pirate, neutralIslands.get(0).getLocation());
-		    }
-		} else {
-		    for(Pirate pirate:unassignedPirates){
-		        switch(pirate.id){
-		            case 0: goTo(pirate,new Location(pirate.getLocation().row-2,0));break;
-		            case 1: goTo(pirate,new Location(pirate.getLocation().row,0));break;
-		            default: goTo(pirate,new Location(pirate.getLocation().row+2,0));break;
-		        }
-		    }
-	    	for (Drone drone : myDrones) {
-    			goTo(drone, myCities.get(0).getLocation());
-		    }
-		}
-	}*/
-	
 	private void dvora() {
 	    Location piratesDestination;
 		if (myIslands.isEmpty()) {
@@ -459,7 +438,7 @@ public class MyBot implements PirateBot {
 	 * @see MyBot_22_2#chooseRandomTempLocation(Aircraft, Location)
 	 */
 	private boolean goTo(Aircraft myAircraft, Location finalDest) {
-		Location tempDest = chooseRandomTempLocation(myAircraft, finalDest);
+		Location tempDest = chooseTempLocation(myAircraft, finalDest);
 		if (tempDest != null) {
 			game.setSail(myAircraft, tempDest);
 			if (myAircraft instanceof Pirate) {
@@ -566,6 +545,82 @@ public class MyBot implements PirateBot {
 				optionalTempDest.remove(randInt);
 		}
 		return null;
+	}
+	
+	private Location chooseTempLocation(Aircraft myAircraft, Location finalDest) {
+		List<Location> optionalTempDest = game.getSailOptions(myAircraft, finalDest);
+		int count = 0;
+		Location currentLocation;
+		boolean willGoNearEnemyPirate = false, willGoNearNeutralIsland = false, willGoNearEnemyDrone = false,
+		        willGoNearMyDrone = false, willGoNearMyPirate = false;
+		while (count < optionalTempDest.size()) {
+		    currentLocation = optionalTempDest.get(count);
+		    
+			willGoNearEnemyPirate = isInAttackRange(currentLocation,enemyPirates);
+            willGoNearNeutralIsland = isNearNeutralIsland(currentLocation,neutralIslands);
+            willGoNearEnemyDrone = isNearDrone(currentLocation, enemyDrones);
+            willGoNearMyDrone = isNearDrone(currentLocation, myDrones);
+            willGoNearMyPirate = isInAttackRange(currentLocation,myPirates);
+            
+            if (!willGoNearEnemyPirate && willGoNearNeutralIsland && willGoNearEnemyDrone && willGoNearMyPirate && willGoNearMyDrone)
+            {
+                return currentLocation;
+            }
+            
+            if (!willGoNearEnemyPirate && willGoNearNeutralIsland && willGoNearEnemyDrone && willGoNearMyPirate)
+            {
+                return currentLocation;
+            }
+            
+            if (!willGoNearEnemyPirate && willGoNearNeutralIsland && willGoNearEnemyDrone)
+            {
+                return currentLocation;
+            }
+            
+            if (!willGoNearEnemyPirate && willGoNearNeutralIsland)
+            {
+                return currentLocation;
+            }
+            
+            if (!willGoNearEnemyPirate)
+            {
+                return currentLocation;
+            }
+            
+            count++;
+		}
+		
+		return chooseRandomTempLocation(myAircraft, finalDest);
+	}
+	
+	private boolean isInAttackRange(Location location, List<Pirate> pirates)
+	{
+	    for (Pirate p : pirates)
+	    {
+	        if (p.inAttackRange(location)) { return true; }
+	    }
+	    
+	    return false;
+	}
+	
+	private boolean isNearNeutralIsland(Location location, List<Island> islands)
+	{
+	    for (Island island : islands)
+	    {
+	        if (island.inControlRange(location)) { return true; }
+	    }
+	    
+	    return false;
+	}
+	
+	private boolean isNearDrone(Location location, List<Drone> drones)
+	{
+	    for (Drone drone : drones)
+	    {
+	        if (drone.inRange(location, game.getAttackRange())) { return true; }
+	    }
+	    
+	    return false;
 	}
 
 	/**
@@ -924,5 +979,6 @@ public class MyBot implements PirateBot {
 			attack(myPirate, drone);
 		else
 			goTo(myPirate, drone.location);
+			//movingPirates[myPirate.id].addDestination(drone.location);
 	}
 }
