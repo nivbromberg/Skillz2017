@@ -784,21 +784,23 @@ public class MyBot implements PirateBot {
 
 	private void handleRushToDefendPirates(List<Pirate> myPirates) {
 		List<Pirate> piratesToRemove = new ArrayList<Pirate>();
-		City closestCity;
 		for (Pirate pirate : myPirates) {
-			closestCity = getClosestCity(pirate, neutralAndEnemyCities);
-			Drone drone = getClosestDroneToLocation(closestCity.location, enemyDrones);
-			double reqRangeCity = 2 * closeDroneToCityDistance;
-			double reqRangePirate = 2 * game.getAttackRange();
-			if(game.getNeutralCities().contains(closestCity))
-			{
-			    reqRangeCity*=2;
-			    reqRangePirate*=2;
-			}
-			if (drone != null && drone.distance(closestCity) <= reqRangeCity && drone.distance(pirate) <= reqRangePirate) {
-				rushToDrone(pirate, drone);
-				piratesToRemove.add(pirate);
-			}
+		    for(City c : neutralAndEnemyCities)
+    		    {
+    			Drone drone = getClosestDroneToLocation(c.location, enemyDrones);
+    			double reqRangeCity = 2 * closeDroneToCityDistance;
+    			double reqRangePirate = 2 * game.getAttackRange();
+    			if(game.getNeutralCities().contains(c))
+    			{
+    			    reqRangeCity*=2;
+    			    reqRangePirate*=2;
+    			}
+    			if (drone != null && drone.distance(c) <= reqRangeCity && drone.distance(pirate) <= reqRangePirate) {
+    				rushToDrone(pirate, drone);
+    				piratesToRemove.add(pirate);
+    				break;
+    			}
+    		}
 		}
 
 		for (Pirate pirate : piratesToRemove) {
