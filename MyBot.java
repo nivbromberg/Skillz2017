@@ -580,6 +580,34 @@ public class MyBot implements PirateBot {
             count++;
 		}
 		
+		currentLocation = myDrone.getLocation();
+		Location enemy = getClosestPirate(myDrone,enemyPirates).getLocation();
+		Location newLoc = null;
+		
+		if (currentLocation.row < enemy.row && currentLocation.col < enemy.col)
+		    newLoc = new Location(currentLocation.row-1, currentLocation.col-1);
+		    
+		if (currentLocation.row < enemy.row && currentLocation.col > enemy.col)
+		    newLoc = new Location(currentLocation.row-1, currentLocation.col+1);
+		    
+		if (currentLocation.row < enemy.row && currentLocation.col == enemy.col)
+		    newLoc = new Location(currentLocation.row-1, currentLocation.col);
+		    
+		if (currentLocation.row > enemy.row && currentLocation.col < enemy.col)
+		    newLoc = new Location(currentLocation.row+1, currentLocation.col-1);
+		    
+		if (currentLocation.row > enemy.row && currentLocation.col > enemy.col)
+		    newLoc = new Location(currentLocation.row+1, currentLocation.col+1);
+		    
+		if (currentLocation.row > enemy.row && currentLocation.col == enemy.col)
+		    newLoc = new Location(currentLocation.row+1, currentLocation.col);
+		    
+		if (currentLocation.row == enemy.row && currentLocation.col == enemy.col)
+		    newLoc = new Location(currentLocation.row+1, currentLocation.col-1);
+		
+		if (newLoc != null)
+		    return chooseRandomTempLocation(myDrone, newLoc);
+		
 		return chooseRandomTempLocation(myDrone, finalDest);
 	}
 	
@@ -633,7 +661,7 @@ public class MyBot implements PirateBot {
 	{
 	    for (Pirate p : pirates)
 	    {
-	        if (p.inAttackRange(location)) { return true; }
+	        if (p.inRange(location, 3*game.getAttackRange())) { return true; }
 	    }
 	    
 	    return false;
@@ -888,6 +916,7 @@ public class MyBot implements PirateBot {
     				break;
     			}
     		}
+    		if (piratesToRemove.size() == 2) { break; }
 		}
         game.debug("Rush to Defend: "+piratesToRemove);
 		for (Pirate pirate : piratesToRemove) {
