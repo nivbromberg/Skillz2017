@@ -450,7 +450,13 @@ public class MyBot implements PirateBot {
 		}
 		return false;
 	}
-
+	
+	/**
+	 * Sends the drone to the best city possible
+	 * 
+	 * @param drone
+	 * @return true - if the drone moved
+	 */
 	private boolean goToDrone(Drone drone) {
 		//Location tempDest = chooseTempDestForDrone(drone, getClosestCity(drone, possibleCities).location, 0);
 		Location tempDest = chooseTempLocation(drone, getClosestCity(drone, possibleCities).location);
@@ -580,7 +586,7 @@ public class MyBot implements PirateBot {
             count++;
 		}
 		
-		currentLocation = myDrone.getLocation();
+		/*currentLocation = myDrone.getLocation();
 		Location enemy = getClosestPirate(myDrone,enemyPirates).getLocation();
 		Location newLoc = null;
 		
@@ -606,7 +612,7 @@ public class MyBot implements PirateBot {
 		    newLoc = new Location(currentLocation.row+1, currentLocation.col-1);
 		
 		if (newLoc != null)
-		    return chooseRandomTempLocation(myDrone, newLoc);
+		    return chooseRandomTempLocation(myDrone, newLoc);*/
 		
 		return chooseRandomTempLocation(myDrone, finalDest);
 	}
@@ -657,6 +663,12 @@ public class MyBot implements PirateBot {
 		return chooseRandomTempLocation(myPirate, finalDest);
 	}
 	
+	/**
+	 * Returns if location is in attack range of one of given pirates
+	 * 
+	 * @param location
+	 * @param pirates
+	 */
 	private boolean isInAttackRange(Location location, List<Pirate> pirates)
 	{
 	    for (Pirate p : pirates)
@@ -667,6 +679,12 @@ public class MyBot implements PirateBot {
 	    return false;
 	}
 	
+	/**
+	 * Returns if location is in control range of one of given islands
+	 * 
+	 * @param location
+	 * @param islands
+	 */
 	private boolean isNearNeutralIsland(Location location, List<Island> islands)
 	{
 	    for (Island island : islands)
@@ -677,6 +695,12 @@ public class MyBot implements PirateBot {
 	    return false;
 	}
 	
+	/**
+	 * Returns if location is in range of one of given drones
+	 * 
+	 * @param location
+	 * @param drones
+	 */
 	private boolean isNearDrone(Location location, List<Drone> drones)
 	{
 	    for (Drone drone : drones)
