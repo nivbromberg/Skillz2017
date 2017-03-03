@@ -309,6 +309,10 @@ public class MyBot implements PirateBot {
 			for (City city : enemyCities) {
 				allLocations.add(city.getLocation());
 			}
+			
+			for (Pirate pirate : enemyPirates) {
+				allLocations.add(pirate.getLocation());
+			}
 
 			for (Location location : allLocations) {
 				locationQueue.add(location);
@@ -1012,11 +1016,11 @@ public class MyBot implements PirateBot {
 	 * @return closest city
 	 */
 	private City getClosestCity(Aircraft a, List<City> l) {
-		int minDistance = this.maxDistance;
+		double minDistance = (double)this.maxDistance;
 		City closestObject = null;
 		for (City c : l) {
-			if (a.distance(c)*(1.0/c.valueMultiplier) < (double)minDistance || closestObject == null) {
-				minDistance = a.distance(c);
+			if (a.distance(c)*(1.0/c.valueMultiplier) < minDistance || closestObject == null) {
+				minDistance = a.distance(c)*(1.0/c.valueMultiplier);
 				closestObject = c;
 			}
 		}
