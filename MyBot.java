@@ -1030,6 +1030,18 @@ public class MyBot implements PirateBot {
 	private City getClosestCity(Enemy a, List<City> l) {
 		return getClosestCity(a.pirate, l);
 	}
+	
+	private City getClosestCity(Island island, List<City> l) {
+		double minDistance = (double)this.maxDistance;
+		City closestObject = null;
+		for (City c : l) {
+			if (island.distance(c)*(1.0/c.valueMultiplier) < minDistance || closestObject == null) {
+				minDistance = island.distance(c)*(1.0/c.valueMultiplier);
+				closestObject = c;
+			}
+		}
+		return closestObject;
+	}
 
 	/**
 	 * Finds closest island to a given aircraft
@@ -1042,6 +1054,7 @@ public class MyBot implements PirateBot {
 	 * @return closest island
 	 */
 	private Island getClosestIsland(Aircraft a, List<Island> l) {
+		//if (a instanceof Pirate) { return getBestIsland((Pirate) a, l); }
 		int minDistance = this.maxDistance;
 		Island closestObject = null;
 		for (Island i : l) {
@@ -1051,6 +1064,20 @@ public class MyBot implements PirateBot {
 			}
 		}
 		return closestObject;
+	}
+	
+	/**
+	 * Return island calculated with distance and closest city value
+	 */
+	private Island getBestIsland(Pirate p, List<Island> l) {
+		double minDistance = (double)this.maxDistance;
+		WeightIslands w = new WeightIslands();
+		for (Island i : l) {
+			w.addIsland(i, (double)getClosestCity(i,possibleCities).valueMultiplier*(1.0/p.distance(i)));
+		}
+		if (w.getMaxWeighted() != null)
+			game.debug("Pirate: "+p.id+" goes to island "+w.getMaxWeighted().id);
+		return w.getMaxWeighted();
 	}
 
 	private Island getClosestIsland(City city, List<Island> islands) {
