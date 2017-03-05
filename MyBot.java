@@ -65,6 +65,11 @@ public class MyBot implements PirateBot {
 			Matzor(toRemove);
 			handleDrones();
 		}*/
+		
+		/*else if (myCities.size() == 1 && game.getAllIslands().size() == 2)
+		{
+		    HaMapal();
+		}*/
 
 		else // MAP : OTHER
 		{
@@ -77,24 +82,9 @@ public class MyBot implements PirateBot {
 		}
 	}
 	
-	private void Matzor(int toRemove)
+	private void HaMapal()
 	{
-		List<Pirate> myPirates = game.getAllMyPirates();
-		myPirates.remove(game.getMyPirateById(toRemove));
 		
-		if (enemyCities.size() > 0)
-		{
-			handleRushToDefendPirates(myPirates);
-		}
-		
-		myPirates.remove(game.getMyPirateById(0));
-		handlePiratesImpulseAttack(myPirates);
-		myPirates.add(game.getMyPirateById(0));
-		
-		for (Pirate pirate : myPirates)
-		{
-			goTo(pirate,getClosestIsland(pirate, game.getAllIslands()).location);
-		}
 	}
 
 	private void gal() {
@@ -806,7 +796,7 @@ public class MyBot implements PirateBot {
         		{
         		    target = attackableEnemies.get(0);
         		}
-        		if (pirate.currentHealth >= target.currentHealth && attackableEnemies.size() == 1)
+        		if (countPiratesWithinAttackRange(pirate.location, myPirates) >= attackableEnemies.size() && pirate.currentHealth >= target.currentHealth)
         		{
     				attack(pirate, target);
     				piratesToRemove.add(pirate);
@@ -905,17 +895,6 @@ public class MyBot implements PirateBot {
 	    game.debug(neutralAndEnemyIslands);
 	    //List<Island> neutralAndEnemyIslands = new ArrayList<>(game.getAllIslands());
 	    
-	    List<Island> islandsToRemove = new ArrayList<>();
-	    
-	    for (Island island : neutralAndEnemyIslands)
-	    {
-	        if (countPiratesOnIsland(island,enemyPirates) > myPirates.size()/2)
-	        {
-	            islandsToRemove.add(island);
-	        }
-	    }
-	    
-	    for (Island island : islandsToRemove) { neutralAndEnemyIslands.remove(island); }
 	    
 	    MyIsland[] islands = new MyIsland[neutralAndEnemyIslands.size()];
 	    int i = 0;
@@ -961,6 +940,30 @@ public class MyBot implements PirateBot {
 	    for (Pirate p : pirates)
 	    {
 	        if(island.inControlRange(p)) { count++; }
+	    }
+	    
+	    return count;
+	}
+	
+	private int countPiratesWithinAttackRange(Location location, List<Pirate> pirates)
+	{
+	    int count = 0;
+	    
+	    for (Pirate p : pirates)
+	    {
+	        if(location.inRange(p,game.getAttackRange())) { count++; }
+	    }
+	    
+	    return count;
+	}
+	
+	private int countPiratesHealthOnIsland(Island island, List<Pirate> pirates)
+	{
+	    int count = 0;
+	    
+	    for (Pirate p : pirates)
+	    {
+	        if(island.inControlRange(p)) { count += p.currentHealth; }
 	    }
 	    
 	    return count;
